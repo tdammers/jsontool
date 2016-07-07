@@ -45,13 +45,20 @@ parseArg [] = ([], mempty)
 parseArg (('-':cmd):args) = case cmd of
     "pretty" -> (args, Endo $ \opts -> opts { cliPretty = True })
     "nopretty" -> (args, Endo $ \opts -> opts { cliPretty = False })
-    "flatten" -> (args, Endo $ \opts -> opts { cliAstTrans = cliAstTrans opts <> Endo flatten })
+    "flatten" -> (args, appendAstTrans flatten)
+    "at" -> case args of
+        (arg0@('-':_)):_ -> throw $ InvalidArgException (cmd ++ " (invalid parameter " ++ arg0 ++ ")")
+        (x:xs) -> (xs, appendAstTrans $ at x)
+        _ -> throw $ InvalidArgException (cmd ++ " (missing required parameter)")
     invalidCmd -> throw $ InvalidArgException cmd
 parseArg (fn:remainder) =
     ( remainder
     , Endo $ \opts ->
         opts
             { cliInputFiles = Just (fromMaybe [] (cliInputFiles opts) ++ [fn]) })
+
+appendAstTrans :: Endo Value -> Endo CliOptions
+appendAstTrans trans = Endo $ \opts -> opts { cliAstTrans = cliAstTrans opts <> trans }
 
 main :: IO ()
 main = do
