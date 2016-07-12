@@ -37,7 +37,12 @@ qualifierP :: Parsec String () Query
 qualifierP = fmap having $ string "[" *> queryP <* string "]"
 
 baseItemP :: Parsec String () Query
-baseItemP = groupedP <|> childByIndexP <|> childByNameP <|> anyChildP <|> currentP <|> implicitCurrentP
+baseItemP = groupedP
+          <|> childByIndexP
+          <|> childByNameP
+          <|> anyChildP
+          <|> currentP
+          <|> implicitCurrentP
 
 groupedP :: Parsec String () Query
 groupedP = string "(" *> queryP <* string ")"
