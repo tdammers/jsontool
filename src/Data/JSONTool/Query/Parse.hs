@@ -31,7 +31,7 @@ qualifiedItemP :: Parsec String () Query
 qualifiedItemP = do
     base <- baseItemP
     qualifiers <- many (try qualifierP)
-    return $ mconcat (base:qualifiers)
+    return $ (mconcat . reverse) (base:qualifiers)
 
 qualifierP :: Parsec String () Query
 qualifierP = fmap having $ string "[" *> queryP <* string "]"
