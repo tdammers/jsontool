@@ -11,6 +11,8 @@ import Data.Aeson
 queryParserTests = testGroup "query parser"
     [ parseCurrentNodeTest
     , parseAllChildrenTest
+    , parsePathTest
+    , parseHasTest
     ]
 
 parseCurrentNodeTest = testCase "current node selector" $ do
@@ -19,7 +21,7 @@ parseCurrentNodeTest = testCase "current node selector" $ do
     let input = Array [ "a", "b" ]
         expected = Array [ Array ["a", "b"] ]
         actual = query q input
-    assertEqual "" actual expected
+    assertEqual "" expected actual
 
 parseAllChildrenTest = testGroup "all children selector"
     [ testCase "of array" $ do
@@ -28,22 +30,65 @@ parseAllChildrenTest = testGroup "all children selector"
         let input = Array [ "a", "b" ]
             expected = Array ["a", "b"]
             actual = query q input
-        assertEqual "" actual expected
+        assertEqual "" expected actual
     , testCase "of object" $ do
         let querySrc = "*"
         q <- eitherFail $ parseQuery querySrc
         let input = object [ ("foo", "a"), ("bar", "b") ]
             expected = Array ["a", "b"]
             actual = query q input
-        assertEqual "" actual expected
+        assertEqual "" expected actual
     , testCase "of string" $ do
         let querySrc = "*"
         q <- eitherFail $ parseQuery querySrc
         let input = "nope"
             expected = Array []
             actual = query q input
-        assertEqual "" actual expected
+        assertEqual "" expected actual
     ]
+
+parsePathTest = testCase "path with exact matches" $ do
+    let querySrc = "foo/bar"
+    q <- eitherFail $ parseQuery querySrc
+    let input = object
+            [ ("foo", object
+                [ ("bar", object
+                    [ ("quux", "hi") ]
+                  )
+                ]
+              )
+            , ("quux", "hello")
+            , ("bar", "nope")
+            ]
+        expected = Array
+            [ object [ ("quux", "hi") ] ]
+        actual = query q input
+    assertEqual "" expected actual
+
+parseHasTest = testCase "has child" $ do
+    let querySrc = "foo[bar]"
+    q <- eitherFail $ parseQuery querySrc
+    let input = object
+            [ ("foo", object
+                [ ("bar", object
+                    [ ("quux", "hi")
+                    ]
+                  )
+                ]
+              )
+            , ("quux", "hello")
+            , ("bar", "nope")
+            ]
+        expected = Array
+            [ object
+                [ ("bar", object
+                    [ ("quux", "hi")
+                    ]
+                  )
+                ]
+            ]
+        actual = query q input
+    assertEqual "" expected actual
 
 eitherFail :: (Monad m, Show e) => Either e a -> m a
 eitherFail (Left e) = fail (show e)

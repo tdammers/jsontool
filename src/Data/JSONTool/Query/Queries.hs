@@ -52,3 +52,8 @@ having q =
         isMatch :: Value -> Bool
         isMatch = not . null . runQuery q . (:[])
 
+alternative :: [Query] -> Query
+alternative queries = Endo $ concatMap resultNodes
+    where
+        resultNodes :: Value -> [Value]
+        resultNodes val = concatMap (\q -> runQuery q [val]) queries
