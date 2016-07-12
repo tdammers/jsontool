@@ -12,6 +12,7 @@ import Data.Monoid
 queriesTests = testGroup "queries"
     [ currentNodeTest
     , allChildrenTest
+    , allDescendantsTest
     , childByKeyTest
     , queryMonoidTests
     ]
@@ -21,21 +22,28 @@ currentNodeTest = testCase "current node selector" $ do
         input = Array ["foo", "bar"]
         actual = query q input
         expected = Array [ Array ["foo", "bar"] ]
-    assertEqual "" actual expected
+    assertEqual "" expected actual
 
 allChildrenTest = testCase "all children selector" $ do
     let q = anyChild
         input = Array ["foo", "bar"]
         actual = query q input
         expected = Array ["foo", "bar"]
-    assertEqual "" actual expected
+    assertEqual "" expected actual
+
+allDescendantsTest = testCase "all descendants selector" $ do
+    let q = anyDescendant
+        input = Array [ Array [ "foo", "bar" ], "baz" ]
+        actual = query q input
+        expected = Array [ Array ["foo", "bar"], "baz", "foo", "bar" ]
+    assertEqual "" expected actual
 
 childByKeyTest = testCase "children by key" $ do
     let q = childAtKey "foo"
         input = object [ ("foo", "bar"), ("baz", "quux")]
         actual = query q input
         expected = Array ["bar"]
-    assertEqual "" actual expected
+    assertEqual "" expected actual
 
 
 queryMonoidTests = testGroup "monoid of queries" 
@@ -44,7 +52,7 @@ queryMonoidTests = testGroup "monoid of queries"
             input = Array ["foo", Array [ "bar"] ]
             actual = query q input
             expected = Array ["bar"]
-        assertEqual "" actual expected
+        assertEqual "" expected actual
     , testCase "foo/bar" $ do
         let q = childAtKey "bar" <> childAtKey "foo"
             input = object
@@ -54,5 +62,5 @@ queryMonoidTests = testGroup "monoid of queries"
                 ]
             actual = query q input
             expected = Array ["baz"]
-        assertEqual "" actual expected
+        assertEqual "" expected actual
     ]

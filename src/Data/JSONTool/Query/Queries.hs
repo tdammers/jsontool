@@ -23,6 +23,15 @@ anyChild =
         resultNodes (Object o) = HashMap.elems o
         resultNodes _ = []
 
+anyDescendant :: Query
+anyDescendant =
+    Endo $ concatMap resultNodes
+    where
+        resultNodes :: Value -> [Value]
+        resultNodes val =
+            let children = runQuery anyChild [val]
+            in children ++ concatMap (runQuery anyDescendant . (:[])) children
+
 childAtKey :: Text -> Query
 childAtKey key =
     Endo $ concatMap resultNodes

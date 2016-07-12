@@ -40,6 +40,7 @@ baseItemP :: Parsec String () Query
 baseItemP = groupedP
           <|> childByIndexP
           <|> childByNameP
+          <|> anyDescendantP
           <|> anyChildP
           <|> currentP
           <|> implicitCurrentP
@@ -70,6 +71,9 @@ posIntP = do
 
 anyChildP :: Parsec String () Query
 anyChildP = string "*" >> return anyChild
+
+anyDescendantP :: Parsec String () Query
+anyDescendantP = try $ string "**" >> return anyDescendant
 
 currentP :: Parsec String () Query
 currentP = string "." >> return current
