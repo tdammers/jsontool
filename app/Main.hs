@@ -2,6 +2,7 @@ module Main where
 
 import Data.JSONTool
 import Data.JSONTool.AstTransforms
+import Data.JSONTool.Query
 
 import System.IO (stdin, stdout, openFile, IOMode (..))
 import System.Environment (getArgs)
@@ -49,6 +50,12 @@ parseArg (('-':cmd):args) = case cmd of
     "at" -> case args of
         (arg0@('-':_)):_ -> throw $ InvalidArgException (cmd ++ " (invalid parameter " ++ arg0 ++ ")")
         (x:xs) -> (xs, appendAstTrans $ at x)
+        _ -> throw $ InvalidArgException (cmd ++ " (missing required parameter)")
+    "q" -> case args of
+        (arg0@('-':_)):_ -> throw $ InvalidArgException (cmd ++ " (invalid parameter " ++ arg0 ++ ")")
+        (x:xs) -> case parseQuery x of
+            Right q -> (xs, appendAstTrans . Endo $ query q)
+            Left err -> throw $ InvalidArgException ("Syntax error in query: " ++ err)
         _ -> throw $ InvalidArgException (cmd ++ " (missing required parameter)")
     invalidCmd -> throw $ InvalidArgException cmd
 parseArg (fn:remainder) =
