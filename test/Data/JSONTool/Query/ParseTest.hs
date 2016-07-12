@@ -47,23 +47,39 @@ parseAllChildrenTest = testGroup "all children selector"
         assertEqual "" expected actual
     ]
 
-parsePathTest = testCase "path with exact matches" $ do
-    let querySrc = "foo/bar"
-    q <- eitherFail $ parseQuery querySrc
-    let input = object
-            [ ("foo", object
-                [ ("bar", object
-                    [ ("quux", "hi") ]
+parsePathTest = testGroup "path with exact matches"
+    [ testCase "by keys" $ do
+        let querySrc = "foo/bar"
+        q <- eitherFail $ parseQuery querySrc
+        let input = object
+                [ ("foo", object
+                    [ ("bar", object
+                        [ ("quux", "hi") ]
+                      )
+                    ]
                   )
+                , ("quux", "hello")
+                , ("bar", "nope")
                 ]
-              )
-            , ("quux", "hello")
-            , ("bar", "nope")
-            ]
-        expected = Array
-            [ object [ ("quux", "hi") ] ]
-        actual = query q input
-    assertEqual "" expected actual
+            expected = Array
+                [ object [ ("quux", "hi") ] ]
+            actual = query q input
+        assertEqual "" expected actual
+    , testCase "by integer indexes" $ do
+        let querySrc = "0/1"
+        q <- eitherFail $ parseQuery querySrc
+        let input = Array
+                [ Array
+                    [ "nope"
+                    , object [ ("quux", "hi") ]
+                    ]
+                , "neither"
+                ]
+            expected = Array
+                [ object [ ("quux", "hi") ] ]
+            actual = query q input
+        assertEqual "" expected actual
+    ]
 
 parseHasTest = testCase "has child" $ do
     let querySrc = "foo[bar]"

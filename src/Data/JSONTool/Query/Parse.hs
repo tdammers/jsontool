@@ -54,10 +54,19 @@ childByNameP = do
     return . childAtKey . Text.pack $ h:t
 
 childByIndexP :: Parsec String () Query
-childByIndexP = do
+childByIndexP = childAtIndex <$> intP
+
+intP :: (Read a, Num a, Integral a) => Parsec String () a
+intP = zeroP <|> posIntP
+
+zeroP :: (Read a, Num a) => Parsec String () a
+zeroP = string "0" >> return 0
+
+posIntP :: (Read a, Integral a) => Parsec String () a
+posIntP = do
     h <- satisfy (`elem` ['1'..'9'])
     t <- many (satisfy isDigit)
-    return . childAtIndex . read $ h:t
+    return . read $ h:t
 
 anyChildP :: Parsec String () Query
 anyChildP = string "*" >> return anyChild
