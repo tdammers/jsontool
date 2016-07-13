@@ -59,6 +59,12 @@ parseArg (('-':cmd):args) = case cmd of
             Right q -> (xs, appendAstTrans . Endo $ query q)
             Left err -> throw $ InvalidArgException ("Syntax error in query: " ++ err)
         _ -> throw $ InvalidArgException (cmd ++ " (missing required parameter)")
+    "Q" -> case args of
+        (arg0@('-':_)):_ -> throw $ InvalidArgException (cmd ++ " (invalid parameter " ++ arg0 ++ ")")
+        (x:xs) -> case parseQuery x of
+            Right q -> (xs, appendAstTrans . Endo $ queryExF q)
+            Left err -> throw $ InvalidArgException ("Syntax error in query: " ++ err)
+        _ -> throw $ InvalidArgException (cmd ++ " (missing required parameter)")
     invalidCmd -> throw $ InvalidArgException cmd
 parseArg (fn:remainder) =
     ( remainder

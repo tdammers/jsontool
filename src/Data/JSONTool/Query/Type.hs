@@ -1,3 +1,5 @@
+{-#LANGUAGE OverloadedLists #-}
+{-#LANGUAGE OverloadedStrings #-}
 module Data.JSONTool.Query.Type
 where
 
@@ -5,22 +7,44 @@ import Data.Aeson
 import Data.Monoid
 import Data.Monoid.Endo
 import qualified Data.Vector as Vector
+import Data.Text (Text)
+import qualified Data.Text as Text
 
-type Query = Endo [Value]
+data MatchKey = IntKey Int | StringKey Text
+
+instance ToJSON MatchKey where
+    toJSON (IntKey i) = toJSON i
+    toJSON (StringKey s) = toJSON s
+
+data Match = Match { matchPath :: [MatchKey], matchValue :: Value }
+
+instance ToJSON Match where
+    toJSON (Match path value) = Array [ toJSON path, value ]
+
+type Query = Endo [Match]
+
+queryWith :: (Match -> a) -> ([a] -> Value) -> Query -> Value -> Value
+queryWith mapper folder q value =  folder . map mapper $ runQuery q [Match [] value]
 
 query :: Query -> Value -> Value
-query q value = fetchAll $ runQuery q [value]
+query = queryWith matchValue toJSON
 
-queryOne :: Query -> Value -> Value
-queryOne q value = fetchOne $ runQuery q [value]
+queryEx :: Query -> Value -> Value
+queryEx = queryWith toJSON toJSON
 
-fetchAll :: [Value] -> Value
-fetchAll values = Array $ Vector.fromList values
+queryExF :: Query -> Value -> Value
+queryExF = queryWith formatMatch object
 
-fetchOne :: [Value] -> Value
-fetchOne [] = Null
-fetchOne (x:xs) = x
+formatMatch :: Match -> (Text, Value)
+formatMatch match =
+    ( Text.intercalate "/" . map keyToStr $ matchPath match
+    , matchValue match
+    )
+    where
+        keyToStr (IntKey i) = Text.pack $ show i
+        keyToStr (StringKey s) = s
 
-runQuery :: Query -> [Value] -> [Value]
+
+runQuery :: Query -> [Match] -> [Match]
 runQuery = appEndo
 
