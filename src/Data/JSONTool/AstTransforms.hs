@@ -24,3 +24,12 @@ at index = Endo $ \val -> case val of
     Array a -> toJSON . HashMap.lookup index . HashMap.fromList . zip (map show [0..]) . Vector.toList $ a
     Object o -> toJSON . HashMap.lookup (Text.pack index) $ o
     _ -> Null
+
+first :: Endo Value
+first = Endo $ go
+    where
+        go (Array a) =
+            case Vector.toList a :: [Value] of
+                [] -> Null
+                (x:xs) -> x
+        go x = x

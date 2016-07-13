@@ -2,7 +2,8 @@ module Main where
 
 import Data.JSONTool
 import Data.JSONTool.AstTransforms
-import Data.JSONTool.Query
+import Data.JSONTool.Query.Type
+import Data.JSONTool.Query.Parse
 
 import System.IO (stdin, stdout, openFile, IOMode (..))
 import System.Environment (getArgs)
@@ -47,6 +48,7 @@ parseArg (('-':cmd):args) = case cmd of
     "pretty" -> (args, Endo $ \opts -> opts { cliPretty = True })
     "nopretty" -> (args, Endo $ \opts -> opts { cliPretty = False })
     "flatten" -> (args, appendAstTrans flatten)
+    "first" -> (args, appendAstTrans first)
     "at" -> case args of
         (arg0@('-':_)):_ -> throw $ InvalidArgException (cmd ++ " (invalid parameter " ++ arg0 ++ ")")
         (x:xs) -> (xs, appendAstTrans $ at x)
@@ -65,7 +67,7 @@ parseArg (fn:remainder) =
             { cliInputFiles = Just (fromMaybe [] (cliInputFiles opts) ++ [fn]) })
 
 appendAstTrans :: Endo Value -> Endo CliOptions
-appendAstTrans trans = Endo $ \opts -> opts { cliAstTrans = cliAstTrans opts <> trans }
+appendAstTrans trans = Endo $ \opts -> opts { cliAstTrans = trans <> cliAstTrans opts }
 
 main :: IO ()
 main = do
