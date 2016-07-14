@@ -1,16 +1,22 @@
 module Data.JSONTool
 ( IsSource (..)
 , IsSink (..)
+, OutputFormat (..)
 , process
 )
 where
 
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString as BS
 import Data.Aeson
 import Data.Aeson.Encode.Pretty
 import Data.Monoid
 import Data.Monoid.Endo
 import System.IO
+import qualified Data.Yaml as Yaml
+import qualified Data.Yaml.Pretty as Yaml
+
+data OutputFormat = OutputJSON | OutputYaml
 
 class IsSource a where
     getBytes :: a -> IO LBS.ByteString
@@ -34,13 +40,18 @@ process :: (IsSource source, IsSink sink)
         -> Endo Value -- ^ AST processor run on parsed JSON
         -> Endo LBS.ByteString -- ^ post-processor run on output JSON source
         -> Bool -- ^ whether to apply pretty-printing
+        -> OutputFormat -- ^ whether to output JSON or YAML
         -> source -- ^ where to read input from
         -> sink -- ^ where to write output to
         -> IO ()
-process preTrans astTrans postTrans pretty source sink = do
+process preTrans astTrans postTrans pretty outfmt source sink = do
     src <- appEndo preTrans <$> getBytes source
-    jsonIn <- either fail return $ eitherDecode src
+    jsonIn <- either fail return $ Yaml.decodeEither (LBS.toStrict src)
     let jsonOut = appEndo astTrans jsonIn
-        encoder = if pretty then encodePretty else encode
+        encoder = case (outfmt, pretty) of
+            (OutputJSON, True) -> encodePretty
+            (OutputJSON, False) -> encode
+            (OutputYaml, True) -> LBS.fromStrict . Yaml.encodePretty Yaml.defConfig
+            (OutputYaml, False) -> LBS.fromStrict . Yaml.encode
     let dst = encoder jsonOut
     putBytes sink $ appEndo postTrans dst

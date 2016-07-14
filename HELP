@@ -10,8 +10,10 @@ input is read from STDIN.
 
 OPTIONS
 
--pretty    Pretty-print output (insert newlines and indentation)
--nopretty  Do not pretty-print output. This is the default.
+-pretty     Pretty-print output (insert newlines and indentation)
+-nopretty   Do not pretty-print output. This is the default.
+-yaml, -yml Output results as YAML.
+-json       Output results as JSON. This is the default.
 
 OPERATIONS
 

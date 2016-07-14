@@ -29,12 +29,13 @@ data CliOptions =
         , cliPostTrans :: Endo LBS.ByteString
         , cliAstTrans :: Endo Value
         , cliPretty :: Bool
+        , cliOutputFormat :: OutputFormat
         , cliInputFiles :: Maybe [FilePath]
         , cliShowHelp :: Bool
         }
 
 instance Default CliOptions where
-    def = CliOptions mempty mempty mempty False Nothing False
+    def = CliOptions mempty mempty mempty False OutputJSON Nothing False
 
 parseArgs :: [String] -> CliOptions
 parseArgs xs = appEndo (mconcat . reverse $ go xs) def
@@ -53,6 +54,9 @@ parseArg (('-':cmd):args) = case cmd of
     "-help" -> ([], Endo $ \opts -> opts { cliShowHelp = True })
     "pretty" -> (args, Endo $ \opts -> opts { cliPretty = True })
     "nopretty" -> (args, Endo $ \opts -> opts { cliPretty = False })
+    "yml" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputYaml })
+    "yaml" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputYaml })
+    "json" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputJSON })
     "flatten" -> (args, appendAstTrans flatten)
     "first" -> (args, appendAstTrans first)
     "at" -> case args of
@@ -104,6 +108,7 @@ main = do
                         (cliAstTrans opts)
                         (cliPostTrans opts)
                         (cliPretty opts)
+                        (cliOutputFormat opts)
                         inHandle
                         stdout
             maybe (goFile Nothing) (mapM_ (goFile . Just)) (cliInputFiles opts)
