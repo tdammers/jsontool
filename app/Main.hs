@@ -1,3 +1,4 @@
+{-#LANGUAGE TemplateHaskell #-}
 module Main where
 
 import Data.JSONTool
@@ -15,6 +16,7 @@ import Data.Default (Default (..))
 import Control.Exception
 import Control.Monad (mapM_)
 import Data.Maybe (fromMaybe)
+import Data.FileEmbed
 
 data InvalidArgException = InvalidArgException String
     deriving (Show)
@@ -28,10 +30,11 @@ data CliOptions =
         , cliAstTrans :: Endo Value
         , cliPretty :: Bool
         , cliInputFiles :: Maybe [FilePath]
+        , cliShowHelp :: Bool
         }
 
 instance Default CliOptions where
-    def = CliOptions mempty mempty mempty False Nothing
+    def = CliOptions mempty mempty mempty False Nothing False
 
 parseArgs :: [String] -> CliOptions
 parseArgs xs = appEndo (mconcat . reverse $ go xs) def
@@ -45,6 +48,9 @@ parseArgs xs = appEndo (mconcat . reverse $ go xs) def
 parseArg :: [String] -> ([String], Endo CliOptions)
 parseArg [] = ([], mempty)
 parseArg (('-':cmd):args) = case cmd of
+    "" -> ([], Endo $ \opts -> opts { cliInputFiles = Just (fromMaybe [] (cliInputFiles opts) ++ args )})
+    "help" -> ([], Endo $ \opts -> opts { cliShowHelp = True })
+    "-help" -> ([], Endo $ \opts -> opts { cliShowHelp = True })
     "pretty" -> (args, Endo $ \opts -> opts { cliPretty = True })
     "nopretty" -> (args, Endo $ \opts -> opts { cliPretty = False })
     "flatten" -> (args, appendAstTrans flatten)
@@ -72,6 +78,10 @@ parseArg (fn:remainder) =
         opts
             { cliInputFiles = Just (fromMaybe [] (cliInputFiles opts) ++ [fn]) })
 
+showHelp :: IO ()
+showHelp = putStrLn $(embedStringFile "HELP")
+
+
 appendAstTrans :: Endo Value -> Endo CliOptions
 appendAstTrans trans = Endo $ \opts -> opts { cliAstTrans = trans <> cliAstTrans opts }
 
@@ -79,14 +89,21 @@ main :: IO ()
 main = do
     args <- getArgs
     let opts = parseArgs args
-    let goFile :: Maybe FilePath -> IO ()
-        goFile fpm = do
-            inHandle <- maybe (return stdin) (flip openFile ReadMode) fpm
-            process
-                (cliPreTrans opts)
-                (cliAstTrans opts)
-                (cliPostTrans opts)
-                (cliPretty opts)
-                inHandle
-                stdout
-    maybe (goFile Nothing) (mapM_ (goFile . Just)) (cliInputFiles opts)
+    if cliShowHelp opts
+        then
+            showHelp
+        else do
+            let goFile :: Maybe FilePath -> IO ()
+                goFile fpm = do
+                    inHandle <- maybe
+                        (return stdin)
+                        (flip openFile ReadMode)
+                        fpm
+                    process
+                        (cliPreTrans opts)
+                        (cliAstTrans opts)
+                        (cliPostTrans opts)
+                        (cliPretty opts)
+                        inHandle
+                        stdout
+            maybe (goFile Nothing) (mapM_ (goFile . Just)) (cliInputFiles opts)

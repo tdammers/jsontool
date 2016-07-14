@@ -1,0 +1,49 @@
+jsontool - A practical tool for wrestling JSON
+
+USAGE
+
+jsontool [OPTION...] [OPERATION...] [-] [FILE...]
+
+Options, operations and files can be specified in any order, however after the
+- argument, everything is interpreted as a filename. If no files are given,
+input is read from STDIN.
+
+OPTIONS
+
+-pretty    Pretty-print output (insert newlines and indentation)
+-nopretty  Do not pretty-print output. This is the default.
+
+OPERATIONS
+
+Operations transform JSON data and are executed as a pipeline, in the order
+they are given on the command line.
+
+-flatten         Recursively flatten the current document into a list. If the 
+                 current document is not a list or dictionary, this operation
+                 does nothing.
+-first           Take the first element of the current document. If the current 
+                 document is not a list, this operation does nothing.
+-at KEY_OR_INDEX Take the element at the given key or index.
+-q QUERY         Execute the QUERY, return the result as a list of values.
+-Q QUERY         Execute the QUERY, return the result as a dictionary of paths  
+                 into the original document -> values.
+
+QUERY SYNTAX
+
+{keyword}        A keyword (a letter, followed by letters, digits, dashes and/
+                 or underscores) selects the item at the exact key. Example:
+
+                 $ echo '{"foo":"bar","baz":"quux"}' | jsontool -q 'foo'
+                 ["bar"]
+{number}         A number selects the nth item exactly. Only works on lists.
+
+{parent}/{child} Selects {child} within every node that matches {parent}. 
+                 Intuitively, this works like stepping into subdirectories in a
+                 filesystem.
+*                Match any direct child node.
+**               Match any descendant
+[{match}]        Select any nodes that match {match}. Unlike {match} applied
+                 raw, this does not change the context of the query, it just
+                 filters. The [] expression can be read as "having".
+{left}|{right}   Matches any node that matches either {left} or {right}.
+({match})        Grouping parentheses. Useful to override precedence.

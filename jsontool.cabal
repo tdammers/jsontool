@@ -43,6 +43,7 @@ executable jsontool
                      , bytestring
                      , data-default
                      , endo
+                     , file-embed
   default-language:    Haskell2010
 
 test-suite jsontool-test
