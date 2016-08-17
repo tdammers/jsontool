@@ -30,6 +30,7 @@ library
                , parsec
                , text
                , unordered-containers
+               , utf8-string
                , vector
                , yaml
   default-language:    Haskell2010

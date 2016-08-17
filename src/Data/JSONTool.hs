@@ -1,3 +1,4 @@
+{-#LANGUAGE OverloadedStrings #-}
 module Data.JSONTool
 ( IsSource (..)
 , IsSink (..)
@@ -15,8 +16,14 @@ import Data.Monoid.Endo
 import System.IO
 import qualified Data.Yaml as Yaml
 import qualified Data.Yaml.Pretty as Yaml
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Vector as Vector
+import qualified Data.Text as Text
+import qualified Data.ByteString.Lazy.UTF8 as LUTF8
+import qualified Data.ByteString.UTF8 as UTF8
+import Data.List (sort)
 
-data OutputFormat = OutputJSON | OutputYaml
+data OutputFormat = OutputJSON | OutputYaml | OutputString
 
 class IsSource a where
     getBytes :: a -> IO LBS.ByteString
@@ -53,5 +60,21 @@ process preTrans astTrans postTrans pretty outfmt source sink = do
             (OutputJSON, False) -> encode
             (OutputYaml, True) -> LBS.fromStrict . Yaml.encodePretty Yaml.defConfig
             (OutputYaml, False) -> LBS.fromStrict . Yaml.encode
+            (OutputString, _) -> stringify
     let dst = encoder jsonOut
     putBytes sink $ appEndo postTrans dst
+
+stringify :: Value -> LBS.ByteString
+stringify (Object o) = mconcat
+    [ encodeUtf8L key <> ": " <> stringify val <> "\n"
+    | (key, val) <- HashMap.toList $ o
+    ]
+stringify (Array a) = mconcat
+    [ stringify val <> "\n"
+    | val <- Vector.toList a
+    ]
+stringify (String t) = encodeUtf8L t
+
+encodeUtf8 = UTF8.fromString . Text.unpack
+
+encodeUtf8L = LUTF8.fromString . Text.unpack

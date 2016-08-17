@@ -57,6 +57,7 @@ parseArg (('-':cmd):args) = case cmd of
     "yml" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputYaml })
     "yaml" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputYaml })
     "json" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputJSON })
+    "raw" -> (args, Endo $ \opts -> opts { cliOutputFormat = OutputString })
     "flatten" -> (args, appendAstTrans flatten)
     "first" -> (args, appendAstTrans first)
     "at" -> case args of
